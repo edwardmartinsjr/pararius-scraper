@@ -1,0 +1,21 @@
+# Binaries for programs and plugins
+*.exe
+*.dll
+*.so
+*.dylib
+pararius-scraper
+
+# Test binary, build with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+.cover/
+
+# Vendor directory
+vendor/
+
+
+# Editor specific
+.vscode/
+debug

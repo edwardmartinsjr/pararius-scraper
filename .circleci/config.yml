@@ -1,0 +1,56 @@
+version: 2
+jobs:
+  test:
+    working_directory: /go/src/github.com/edwardmartinsjr/pararius-scraper
+    environment:
+      CIRCLE_ARTIFACTS: /tmp/circleci-artifacts
+      CIRCLE_TEST_REPORTS: /tmp/circleci-test-results
+    docker:
+      - image: circleci/golang:1.12
+    steps:
+      - add_ssh_keys
+      - checkout
+      - run:
+         name: Prepare Environment
+         command: |
+          mkdir -p $CIRCLE_ARTIFACTS $CIRCLE_TEST_REPORTS
+          git submodule sync && git submodule update --init
+      - restore_cache:
+          keys:
+            - dep-cache-{{ checksum "Gopkg.lock"}}
+      - run:
+          name: Install Dependencies
+          command: |
+            go get github.com/jstemmer/go-junit-report
+            make install-build
+            make install-test
+      - save_cache:
+          key: dep-cache-{{ checksum "Gopkg.lock"}}
+          paths:
+            - "/go/pkg"
+            - vendor/
+      - run:
+          name: Build Check
+          command: |
+            make build
+      - run:
+          name: Unit tests
+          command: |
+            make lint
+            make coverage | tee test_output; exit ${PIPESTATUS[0]}
+      - run:
+          name: Save Test Results
+          command: |
+            mkdir -p ~/junit ~/artifacts
+            go-junit-report < test_output > ~/junit/test-results.xml
+            [ -f .cover/coverage.html ] && mv .cover/coverage.html ~/artifacts
+      - store_test_results:
+          path: ~/junit
+      - store_artifacts:
+          path: ~/artifacts
+
+workflows:
+  version: 2
+  test:
+    jobs:
+      - test
